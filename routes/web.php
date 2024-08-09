@@ -15,8 +15,7 @@ use App\Http\Controllers\FileSearchController;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('search');
 });
 
-Route::get('/directory/{path?}', [FileSearchController::class, 'showDirectoryContent'])->name('directory.content');
-Route::get('/file/{filePath}', [FileSearchController::class, 'serveFile'])->where('filePath', '.*')->name('file.serve');
+Route::get('/search', [FileSearchController::class, 'search'])->name('search');

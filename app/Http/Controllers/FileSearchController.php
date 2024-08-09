@@ -3,52 +3,42 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
 
 class FileSearchController extends Controller
 {
-    public function showDirectoryContent(Request $request, $path = '')
+    public function search(Request $request)
     {
-        $rootDirectory = 'D:'; // Set root directory path here
-        $fullPath = $path ? $rootDirectory . '\\' . $path : $rootDirectory;
-
-        // Ensure the full path is safe
-        $fullPath = realpath($fullPath);
-
-        if (!$fullPath || !File::exists($fullPath) || !File::isDirectory($fullPath)) {
-            return abort(404, 'Directory not found');
-        }
-
-        $directories = File::directories($fullPath);
-        $files = File::files($fullPath);
-
-        // Handle search query
-        $query = $request->input('query');
-        if ($query) {
-            $directories = array_filter($directories, function ($dir) use ($query) {
-                return stripos(basename($dir), $query) !== false;
-            });
-            $files = array_filter($files, function ($file) use ($query) {
-                return stripos(basename($file), $query) !== false;
-            });
-        }
-
-        return view('directory', [
-            'directories' => $directories,
-            'files' => $files,
-            'currentPath' => $path
+        // Validasi input pencarian
+        $request->validate([
+            'query' => 'required|string',
         ]);
-    }
 
-    public function serveFile($filePath)
-    {
-        $filePath = 'D:\\' . urldecode($filePath);
-        $filePath = realpath($filePath);
+        $query = $request->input('query');
+        $directory = '\\\\sn1jkt03\\m-tools$\\M-Tool\\Documents';
 
-        if (File::exists($filePath)) {
-            return response()->file($filePath);
+        // Array untuk menyimpan hasil pencarian
+        $results = [];
+
+        // RecursiveDirectoryIterator untuk iterasi melalui subfolder
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory));
+        foreach ($iterator as $file) {
+            if (strpos($file->getFilename(), $query) !== false) {
+                $results[] = $file->getPathname();
+            }
         }
 
-        return abort(404, 'File not found');
+        // Jika file atau folder ditemukan
+        if (count($results) > 0) {
+            // Ambil path dari file atau folder pertama yang ditemukan
+            $firstResult = $results[0];
+
+            // Jalankan File Explorer dan buka lokasi file/folder tersebut
+            exec('start "" "' . dirname($firstResult) . '"');
+
+            // Redirect atau return sesuai kebutuhan
+            return redirect()->back()->with('success', 'File Explorer berhasil dibuka.');
+        } else {
+            return redirect()->back()->with('error', 'Tidak ada file atau folder yang ditemukan.');
+        }
     }
 }
